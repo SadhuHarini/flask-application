@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <!-- Link to your CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+
+        <!-- Expense Form -->
+        <form action="{{ url_for('add_expense') }}" method="POST" class="expense-form">
+            <input type="text" name="description" placeholder="Description" required>
+            <input type="number" name="amount" placeholder="Amount" step="0.01" required>
+            <input type="text" name="category" placeholder="Category" required>
+            <button type="submit">Add Expense</button>
+        </form>
+
+        <!-- Expense List -->
+        <h2>Your Expenses</h2>
+        <ul>
+            {% for expense in expenses %}
+                <li>
+                    {{ expense.description }} - ${{ expense.amount }} - <strong>{{ expense.category }}</strong>
+                    <a href="{{ url_for('delete_expense', id=expense.id) }}">Delete</a>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Pie Chart -->
+        <canvas id="expenseChart" width="400" height="200"></canvas>
+
+    </div>
+
+    <script>
+        window.onload = function() {
+            // Ensure Flask data is passed as valid JavaScript objects using 'tojson' in the template
+            const categories = {{ categories | tojson | safe }};
+            
+            // If there are no categories, prevent chart rendering
+            if (categories.length === 0) {
+                console.log('No categories to display in the chart');
+                return;
+            }
+
+            // Extract labels (category names) and data (spending totals)
+            const labels = categories.map(item => item[0]); // category names
+            const data = categories.map(item => item[1]);   // total spending amounts
+
+            // Create the chart using Chart.js
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie', // Pie chart
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#ff9999', '#66b3ff', '#99ff99', '#ffcc99', '#c2c2f0'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ': $' + tooltipItem.raw.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
